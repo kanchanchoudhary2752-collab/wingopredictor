@@ -1,0 +1,621 @@
+<!doctype html>
+<html>
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" id="viewport" content="width=device-width, initial-scale=1">
+    </head>
+    <body>
+      <div>
+      
+      </div>
+    </body>
+</html>
+<!doctype html>
+<html>
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" id="viewport" content="width=device-width, initial-scale=1">
+    </head>
+    <body>
+      <div>
+        
+      </div>
+    </body>
+</html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>WinGo 30S · Predictor</title>
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box;font-family:system-ui,'Segoe UI',monospace}
+        body{background:#0d1a0a;display:flex;justify-content:center;align-items:center;min-height:100vh;padding:16px}
+        .app{max-width:550px;width:100%;background:#1a2e14;border-radius:20px;padding:20px;box-shadow:0 8px 32px rgba(0,0,0,0.6);border:1px solid #2f4a22}
+        .header{text-align:center;color:#c8f0a0;font-size:14px;letter-spacing:2px;margin-bottom:14px;font-weight:600}
+        .live-badge{background:#e65c4f;color:#fff;padding:2px 10px;border-radius:20px;font-size:9px;font-weight:700;animation:blink 1s infinite;display:inline-block;margin-left:6px}
+        @keyframes blink{0%,100%{opacity:1}50%{opacity:0.3}}
+        
+        .timer-section{background:#2b461f;border-radius:12px;padding:10px 14px;margin-bottom:10px;border:1px solid #3a5a2a;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px}
+        .timer-display{display:flex;align-items:center;gap:10px}
+        .timer-circle{width:50px;height:50px;border-radius:50%;background:linear-gradient(135deg,#1a3a10,#2a5a1a);display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:800;color:#ffec80;font-family:'Courier New',monospace;border:2px solid #3a7a2a}
+        .timer-circle.warning{border-color:#ff6b35;animation:pulse-border 0.5s infinite}
+        .timer-circle.danger{border-color:#e65c4f;animation:pulse-border 0.3s infinite}
+        @keyframes pulse-border{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}
+        .timer-info{display:flex;flex-direction:column;gap:2px}
+        .timer-label{color:#8aaa70;font-size:9px;text-transform:uppercase;letter-spacing:1px}
+        .timer-period{color:#a8d080;font-size:11px;font-family:monospace}
+        .timer-status{color:#8aaa70;font-size:10px}
+        .timer-status.active{color:#6bc8ff}
+        .timer-status.ending{color:#ff6b35}
+        .timer-status.ended{color:#e65c4f}
+        .progress-bar{width:100px;height:4px;background:#1a2e14;border-radius:4px;overflow:hidden}
+        .progress-bar .fill{height:100%;background:linear-gradient(90deg,#4facfe,#ffd700);border-radius:4px;transition:width 0.3s}
+        .progress-bar .fill.warning{background:linear-gradient(90deg,#ff6b35,#ffd700)}
+        .progress-bar .fill.danger{background:linear-gradient(90deg,#e65c4f,#ff6b35)}
+        
+        .info-bar{background:#2b461f;padding:8px 12px;border-radius:10px;display:flex;justify-content:space-between;color:#e9ffc2;font-weight:600;font-size:11px;flex-wrap:wrap;gap:4px;border:1px solid #3a5a2a}
+        .info-bar .value{color:#ffec80;font-family:'Courier New',monospace}
+        .last-5{display:flex;justify-content:center;gap:6px;margin:10px 0;flex-wrap:wrap}
+        .dot{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;color:#fff;border:2px solid rgba(255,255,255,0.1)}
+        .dot.big{background:linear-gradient(135deg,#4facfe,#00c6fb)}
+        .dot.small{background:linear-gradient(135deg,#f093fb,#f5576c)}
+        .dot.predicted{border-color:#ffd700;box-shadow:0 0 30px rgba(255,215,0,0.3);animation:pulse 1.5s infinite}
+        @keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.1)}}
+        .pattern-label{color:#8aaa70;font-size:10px;text-align:center;width:100%;margin-top:3px;font-family:monospace}
+        
+        .prediction-box{background:linear-gradient(135deg,#2b6b1a,#1e4a10);border-radius:14px;padding:14px;text-align:center;margin:10px 0;border:1px solid #3a7a2a}
+        .prediction-box .label{color:#a8d080;font-size:10px;text-transform:uppercase;letter-spacing:2px}
+        .prediction-box .result{color:#fff;font-size:44px;font-weight:800;margin:2px 0;text-shadow:0 0 30px rgba(168,208,128,0.3)}
+        .prediction-box .confidence{color:#c8f0a0;font-size:13px}
+        .prediction-box .analysis-info{color:#8aaa70;font-size:10px;margin-top:4px;white-space:pre-wrap;text-align:left;background:#1a2e14;padding:6px 10px;border-radius:6px;max-height:130px;overflow-y:auto}
+        .prediction-source{display:inline-block;padding:2px 10px;border-radius:20px;font-size:9px;font-weight:700;margin-top:4px}
+        .source-pattern{background:#4facfe;color:#fff}
+        .source-trend{background:#ffd700;color:#1a2e14}
+        .source-no-match{background:#ff7eb3;color:#fff}
+        
+        .stats-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin:10px 0}
+        .stat-card{background:#1f3616;padding:8px;border-radius:8px;text-align:center;border:1px solid #2f4a22}
+        .stat-card .label{color:#8aaa70;font-size:8px;text-transform:uppercase;letter-spacing:1px}
+        .stat-card .value{color:#fff;font-size:16px;font-weight:700;margin-top:2px}
+        .stat-card .value.big{color:#6bc8ff}
+        .stat-card .value.small{color:#ff7eb3}
+        .stat-card .value.gold{color:#ffd700}
+        
+        .table-wrap{background:#1f3616;border-radius:10px;overflow:hidden;margin-top:10px;max-height:350px;overflow-y:auto;border:1px solid #2f4a22}
+        .table-wrap::-webkit-scrollbar{width:4px}
+        .table-wrap::-webkit-scrollbar-thumb{background:#3a5a2a;border-radius:10px}
+        .table-wrap table{width:100%;border-collapse:collapse;font-size:11px}
+        .table-wrap th{background:#2b461f;color:#a8d080;padding:6px 4px;text-align:left;font-weight:600;position:sticky;top:0;z-index:2}
+        .table-wrap td{padding:4px 4px;border-bottom:1px solid #2a4020;color:#d4e8c0;font-size:11px}
+        .badge-b{background:#4facfe;color:#fff;padding:1px 10px;border-radius:20px;font-size:9px;font-weight:700}
+        .badge-s{background:#f5576c;color:#fff;padding:1px 10px;border-radius:20px;font-size:9px;font-weight:700}
+        .num-box{display:inline-block;width:24px;height:24px;line-height:24px;text-align:center;border-radius:50%;font-weight:700;font-size:11px;color:#fff}
+        .num-box.big{background:#4facfe}
+        .num-box.small{background:#f5576c}
+        
+        .refresh-btn{background:#2b461f;border:none;color:#c8f0a0;padding:8px;border-radius:40px;width:100%;font-weight:600;cursor:pointer;margin-top:8px;font-size:12px;transition:0.3s;border:1px solid #3a5a2a}
+        .refresh-btn:hover{background:#3a5a2a}
+        .footer{text-align:center;color:#4a6a3a;font-size:9px;margin-top:8px}
+        .loading{color:#8aaa70;text-align:center;padding:12px;font-size:12px}
+        .db-status{background:#1f3616;padding:6px 10px;border-radius:6px;color:#8aaa70;font-size:10px;margin-top:8px;border:1px solid #2f4a22;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap}
+        .db-status .highlight{color:#ffec80}
+        .clear-btn{background:#4a1a1a;border:none;color:#ff7eb3;padding:4px 10px;border-radius:20px;font-size:9px;cursor:pointer}
+        .clear-btn:hover{background:#6a2a2a}
+        
+        @media (max-width:480px){.stats-grid{grid-template-columns:1fr 1fr}.info-bar{font-size:10px}.prediction-box .result{font-size:36px}.dot{width:32px;height:32px;font-size:12px}.header{font-size:12px}.timer-circle{width:42px;height:42px;font-size:18px}.progress-bar{width:70px}}
+        @media (max-width:380px){.stats-grid{grid-template-columns:1fr}.info-bar{flex-direction:column;text-align:center}}
+    </style>
+</head>
+<body>
+    <div class="app">
+        <div class="header">🎯 WINGO 30S · PREDICTOR <span class="live-badge">LIVE</span></div>
+        
+        <div class="timer-section">
+            <div class="timer-display">
+                <div class="timer-circle" id="timerCircle"><span id="timerSeconds">30</span></div>
+                <div class="timer-info">
+                    <div class="timer-label">⏱️ Next Draw</div>
+                    <div class="timer-period" id="timerPeriod">--</div>
+                    <div class="timer-status active" id="timerStatus">● Waiting</div>
+                </div>
+            </div>
+            <div>
+                <div style="display:flex;justify-content:space-between;font-size:8px;color:#8aaa70;">
+                    <span>0s</span>
+                    <span id="timerProgressLabel">30s</span>
+                    <span>30s</span>
+                </div>
+                <div class="progress-bar"><div class="fill" id="timerProgress" style="width:100%"></div></div>
+            </div>
+        </div>
+        
+        <div class="info-bar">
+            <span>📊 <span class="value" id="recordCount">0</span></span>
+            <span>🔄 <span class="value" id="lastUpdate">--</span></span>
+            <span>📅 <span class="value" id="periodDisplay">--</span></span>
+        </div>
+        
+        <div class="last-5" id="last5"><div class="loading">⏳ Loading...</div></div>
+        
+        <div class="prediction-box">
+            <div class="label">🔮 Next Prediction</div>
+            <div class="result" id="prediction">—</div>
+            <div class="confidence" id="confidence">Confidence: 0%</div>
+            <div id="sourceBadge" class="prediction-source source-no-match">⏳ Waiting...</div>
+            <div class="analysis-info" id="analysisDisplay">Analysis: —</div>
+        </div>
+        
+        <div class="stats-grid">
+            <div class="stat-card"><div class="label">📊 Big %</div><div class="value big" id="bigPercent">0%</div></div>
+            <div class="stat-card"><div class="label">📊 Small %</div><div class="value small" id="smallPercent">0%</div></div>
+            <div class="stat-card"><div class="label">📋 Trend</div><div class="value gold" id="trendDisplay">—</div></div>
+        </div>
+        
+        <div class="table-wrap">
+            <table>
+                <thead><tr><th>#</th><th>Period</th><th>Number</th><th>B/S</th></tr></thead>
+                <tbody id="historyBody"><tr><td colspan="4" class="loading">⏳ Loading...</td></tr></tbody>
+            </table>
+        </div>
+        
+        <button class="refresh-btn" onclick="refreshAll()">🔄 Refresh Data</button>
+        
+        <div class="db-status">
+            <span>📌 <span class="highlight" id="dbStatus">Initializing...</span></span>
+            <button class="clear-btn" onclick="clearDatabase()">🗑️ Clear</button>
+        </div>
+        
+        <div class="footer">⚡ Auto-sync: 5s · Last 5 Pattern → Pattern Trend (Fallback)</div>
+    </div>
+
+<script>
+    // ============================================
+    // API & DATABASE CONFIG
+    // ============================================
+    const API_URL = 'https://draw.ar-lottery01.com/WinGo/WinGo_30S/GetHistoryIssuePage.json';
+    const DB_KEY = 'wingo_prediction_db';
+    let fullHistory = [];
+    let seenPeriods = new Set();
+    let timerInterval = null;// ============================================
+// ⏱️ TIMER
+// ============================================
+function getTimerInfo() {
+    const now = new Date();
+    const start = new Date(now);
+    start.setHours(5, 30, 0, 0);
+    let elapsed = Math.floor((now.getTime() - start.getTime()) / 1000);
+    if (elapsed < 0) {
+        return { active: false, period: 'Game not started', seconds: 30, progress: 0, status: 'waiting' };
+    }
+    const dur = 30;
+    const total = Math.floor(elapsed / dur);
+    const upcoming = total + 1;
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const counter = String(upcoming).padStart(6, '0');
+    const period = `${year}${month}${day}10000${counter}`;
+    const rem = elapsed % dur;
+    let left = dur - rem;
+    if (left === dur) left = dur;
+    let status = 'active';
+    if (left <= 5) status = 'ending';
+    if (left <= 2) status = 'ended';
+    return { active: true, period: period, seconds: left, progress: (left / dur) * 100, status: status };
+}
+
+function updateTimer() {
+    const info = getTimerInfo();
+    const seconds = Math.ceil(info.seconds);
+    document.getElementById('timerSeconds').textContent = seconds;
+    document.getElementById('timerPeriod').textContent = info.period;
+    document.getElementById('periodDisplay').textContent = info.period;
+    
+    document.getElementById('timerProgress').style.width = info.progress + '%';
+    
+    const circle = document.getElementById('timerCircle');
+    circle.className = 'timer-circle';
+    if (info.status === 'ended') circle.classList.add('danger');
+    else if (info.status === 'ending') circle.classList.add('warning');
+    
+    const fill = document.getElementById('timerProgress');
+    fill.className = 'fill';
+    if (info.status === 'ended') fill.classList.add('danger');
+    else if (info.status === 'ending') fill.classList.add('warning');
+    
+    const statusEl = document.getElementById('timerStatus');
+    statusEl.className = 'timer-status';
+    if (info.status === 'ended') { statusEl.textContent = '🔴 Draw in progress...'; statusEl.classList.add('ended'); }
+    else if (info.status === 'ending') { statusEl.textContent = '🟡 Draw starting soon...'; statusEl.classList.add('ending'); }
+    else { statusEl.textContent = '🟢 Waiting for next draw'; statusEl.classList.add('active'); }
+    
+    document.getElementById('timerProgressLabel').textContent = Math.ceil(info.seconds) + 's';
+    
+    if (info.seconds <= 0.5) refreshAll();
+}
+
+function startTimer() {
+    if (timerInterval) clearInterval(timerInterval);
+    updateTimer();
+    timerInterval = setInterval(updateTimer, 1000);
+}
+
+// ============================================
+// DATABASE
+// ============================================
+function saveDatabase() {
+    try {
+        const data = { history: fullHistory, seenPeriods: Array.from(seenPeriods) };
+        localStorage.setItem(DB_KEY, JSON.stringify(data));
+    } catch (e) { console.error('Save error:', e); }
+}
+
+function loadDatabase() {
+    try {
+        const saved = localStorage.getItem(DB_KEY);
+        if (saved) {
+            const data = JSON.parse(saved);
+            fullHistory = data.history || [];
+            seenPeriods = new Set(data.seenPeriods || []);
+            return true;
+        }
+    } catch (e) { console.error('Load error:', e); }
+    return false;
+}
+
+function clearDatabase() {
+    if (confirm('🗑️ Clear all data?')) {
+        fullHistory = [];
+        seenPeriods = new Set();
+        localStorage.removeItem(DB_KEY);
+        renderAll();
+        document.getElementById('dbStatus').textContent = 'Cleared';
+    }
+}
+
+// ============================================
+// API FETCH
+// ============================================
+async function fetchAPI() {
+    try {
+        const res = await fetch(`${API_URL}?ts=${Date.now()}`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const json = await res.json();
+        if (json.code === 0 && json.data && Array.isArray(json.data.list)) {
+            return json.data.list;
+        }
+        throw new Error(json.msg || 'Invalid API response');
+    } catch (err) {
+        console.error('API Error:', err);
+        document.getElementById('dbStatus').textContent = '❌ API Error';
+        return null;
+    }
+}
+
+// ============================================
+// UPDATE DATABASE
+// ============================================
+async function updateDatabase() {
+    const list = await fetchAPI();
+    if (!list || list.length === 0) return;
+    let added = 0;
+    const reversed = [...list].reverse();
+    for (const item of reversed) {
+        const period = item.issueNumber || item.period || '';
+        if (period && !seenPeriods.has(period)) {
+            seenPeriods.add(period);
+            fullHistory.push({
+                period: period,
+                number: item.number,
+                bigSmall: item.number >= 5 ? 'B' : 'S',
+                color: item.color || 'green'
+            });
+            added++;
+        }
+    }
+    if (added > 0) {
+        saveDatabase();
+        document.getElementById('dbStatus').textContent = `✅ +${added} records`;
+        document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString();
+    } else {
+        document.getElementById('dbStatus').textContent = `ℹ️ ${fullHistory.length} records`;
+    }
+    return added;
+}// ============================================
+// ⭐ MAIN LOGIC: Last 5 Pattern + Pattern Trend Behaviour
+// 
+// 🔥 FIX: 
+//   1. Overall system HATAO
+//   2. Sirf Pattern + Pattern Trend Behaviour use karo
+//   3. Pattern match na ho → Pattern Trend Behaviour se
+// ============================================
+function analyzePatternTrend(data) {
+    if (data.length < 8) {
+        return {
+            prediction: '—',
+            confidence: 0,
+            trend: 'Insufficient Data',
+            analysis: 'Need at least 8 records',
+            bigPercent: 0,
+            smallPercent: 0,
+            pattern: '—',
+            matches: 0,
+            source: 'no-data',
+            sourceLabel: '⏳ Waiting...',
+            sourceClass: 'source-no-match'
+        };
+    }
+
+    // ============================================
+    // STEP 1: LAST 5 PATTERN
+    // ============================================
+    const patternLength = 5;
+    const lastPattern = data.slice(-patternLength).map(d => d.bigSmall);
+    const lastPatternStr = lastPattern.join('');
+
+    // ============================================
+    // STEP 2: SEARCH PATTERN IN HISTORY
+    // ============================================
+    let matches = [];
+    let matchPositions = [];
+    for (let i = 0; i < data.length - patternLength; i++) {
+        const segment = data.slice(i, i + patternLength).map(d => d.bigSmall).join('');
+        if (segment === lastPatternStr) {
+            const next = data[i + patternLength];
+            if (next) {
+                matches.push({ next: next.bigSmall, index: i });
+                matchPositions.push(i);
+            }
+        }
+    }
+
+    const totalMatches = matches.length;
+    let patternBig = 0, patternSmall = 0;
+    for (const m of matches) {
+        if (m.next === 'B') patternBig++;
+        else patternSmall++;
+    }
+
+    const patternBigPercent = totalMatches > 0 ? (patternBig / totalMatches * 100) : 0;
+    const patternSmallPercent = totalMatches > 0 ? (patternSmall / totalMatches * 100) : 0;
+
+    // ============================================
+    // 🔥 STEP 3: PATTERN TREND BEHAVIOUR
+    // Jab pattern chal raha tha, us time ka behaviour
+    // ============================================
+    let trendBig = 0;
+    let trendSmall = 0;
+    let trendTotal = 0;
+
+    if (matchPositions.length > 0) {
+        for (const idx of matchPositions) {
+            // Pattern ke time ke aas-paas ka data (3 pehle + 5 pattern + 3 baad)
+            const start = Math.max(0, idx - 3);
+            const end = Math.min(data.length, idx + patternLength + 3);
+            
+            for (let i = start; i < end; i++) {
+                // Pattern ko skip karo
+                if (i >= idx && i < idx + patternLength) continue;
+                if (data[i]) {
+                    if (data[i].bigSmall === 'B') trendBig++;
+                    else trendSmall++;
+                    trendTotal++;
+                }
+            }
+        }
+    }
+
+    const trendBigPercent = trendTotal > 0 ? (trendBig / trendTotal * 100) : 0;
+    const trendSmallPercent = trendTotal > 0 ? (trendSmall / trendTotal * 100) : 0;
+
+    // ============================================
+    // STEP 4: TREND LABEL (Pattern ke time ka trend)
+    // ============================================
+    let trendLabel = 'Balanced';
+    if (trendTotal > 0) {
+        if (trendBigPercent > 58) trendLabel = '🔥 Strong Big (Pattern Time)';
+        else if (trendBigPercent > 53) trendLabel = '📈 Slight Big (Pattern Time)';
+        else if (trendBigPercent > 51) trendLabel = '↗️ Mild Big (Pattern Time)';
+        else if (trendSmallPercent > 58) trendLabel = '❄️ Strong Small (Pattern Time)';
+        else if (trendSmallPercent > 53) trendLabel = '📉 Slight Small (Pattern Time)';
+        else if (trendSmallPercent > 51) trendLabel = '↘️ Mild Small (Pattern Time)';
+        else trendLabel = '⚖️ Balanced (Pattern Time)';
+    } else {
+        trendLabel = '⚠️ No Pattern Trend Available';
+    }
+
+    // ============================================
+    // STEP 5: DECISION - ONLY Pattern + Pattern Trend
+    // NO OVERALL SYSTEM!
+    // ============================================
+    let prediction = 'B';
+    let confidence = 50;
+    let source = 'no-match';
+    let sourceLabel = 'No Match';
+    let sourceClass = 'source-no-match';
+    let analysis = '';
+
+    if (totalMatches > 0) {
+        // ✅ PATTERN MATCH HAI → Pattern se prediction
+        if (patternBigPercent > patternSmallPercent) {
+            prediction = 'B';
+            confidence = patternBigPercent;
+        } else if (patternSmallPercent > patternBigPercent) {
+            prediction = 'S';
+            confidence = patternSmallPercent;
+        } else {
+            // Tie ho to Pattern Trend se
+            if (trendTotal > 0) {
+                prediction = trendBigPercent >= trendSmallPercent ? 'B' : 'S';
+                confidence = Math.max(trendBigPercent, trendSmallPercent);
+                source = 'trend-tie';
+                sourceLabel = '📊 Pattern Trend (Tie)';
+                sourceClass = 'source-trend';
+            } else {
+                // Pattern trend bhi nahi to No Prediction
+                prediction = '?';
+                confidence = 0;
+                source = 'no-trend';
+                sourceLabel = '❌ No Trend Available';
+                sourceClass = 'source-no-match';
+            }
+        }
+
+        if (source !== 'trend-tie' && source !== 'no-trend') {
+            source = 'pattern';
+            sourceLabel = `🎯 Pattern (${totalMatches} matches)`;
+            sourceClass = 'source-pattern';
+        }
+
+        analysis = `📌 Last ${patternLength} Pattern: ${lastPatternStr}\n` +
+                   `🔍 Matches: ${totalMatches}\n` +
+                   `📊 Aftermath: B=${patternBigPercent.toFixed(1)}% (${patternBig}) | S=${patternSmallPercent.toFixed(1)}% (${patternSmall})\n` +
+                   `📊 Pattern Trend: B=${trendBigPercent.toFixed(1)}% | S=${trendSmallPercent.toFixed(1)}%\n` +
+                   `📈 Trend: ${trendLabel}\n` +
+                   `✅ Source: PATTERN → ${prediction}`;
+
+    } else if (trendTotal > 0) {
+        // ❌ PATTERN MATCH NAHI → Pattern Trend se
+        prediction = trendBigPercent >= trendSmallPercent ? 'B' : 'S';
+        confidence = Math.max(trendBigPercent, trendSmallPercent);
+        source = 'trend';
+        sourceLabel = '📊 Pattern Trend (Fallback)';
+        sourceClass = 'source-trend';
+
+        analysis = `📌 Last ${patternLength} Pattern: ${lastPatternStr}\n` +
+                   `❌ No matches found\n` +
+                   `📊 Pattern Trend: B=${trendBigPercent.toFixed(1)}% | S=${trendSmallPercent.toFixed(1)}%\n` +
+                   `📈 Trend: ${trendLabel}\n` +
+                   `✅ Source: PATTERN TREND → ${prediction}`;
+
+    } else {
+        // ❌ PATTERN MATCH NAHI + PATTERN TREND BHI NAHI
+        prediction = '?';
+        confidence = 0;
+        source = 'no-data';
+        sourceLabel = '❌ No Pattern / No Trend';
+        sourceClass = 'source-no-match';
+
+        analysis = `📌 Last ${patternLength} Pattern: ${lastPatternStr}\n` +
+                   `❌ No matches found\n` +
+                   `❌ No pattern trend found\n` +
+                   `⚠️ Cannot make prediction - Need more data`;
+    }
+
+    // Overall Big/Small percentage (sirf display ke liye, prediction ke liye nahi)
+    const total = data.length;
+    const big = data.filter(d => d.bigSmall === 'B').length;
+    const small = data.filter(d => d.bigSmall === 'S').length;
+    const overallBigPercent = (big / total * 100);
+    const overallSmallPercent = (small / total * 100);
+
+    return {
+        prediction: prediction,
+        confidence: Math.min(parseFloat(confidence.toFixed(1)), 85),
+        trend: trendLabel,
+        analysis: analysis,
+        bigPercent: parseFloat(overallBigPercent.toFixed(1)),
+        smallPercent: parseFloat(overallSmallPercent.toFixed(1)),
+        pattern: lastPatternStr,
+        matches: totalMatches,
+        source: source,
+        sourceLabel: sourceLabel,
+        sourceClass: sourceClass,
+        trendBigPercent: parseFloat(trendBigPercent.toFixed(1)),
+        trendSmallPercent: parseFloat(trendSmallPercent.toFixed(1)),
+        trendTotal: trendTotal,
+        patternLength: patternLength
+    };
+}    // ============================================
+    // RENDER UI
+    // ============================================
+    function renderAll() {
+        const analysis = analyzePatternTrend(fullHistory);
+        const lastN = fullHistory.slice(-analysis.patternLength || 5).map(d => d.bigSmall);
+
+        const c = document.getElementById('last5');
+        if (lastN.length === (analysis.patternLength || 5)) {
+            c.innerHTML = '';
+            const showDots = lastN.slice(-5);
+            showDots.forEach((ch, i) => {
+                const dot = document.createElement('div');
+                dot.className = `dot ${ch === 'B' ? 'big' : 'small'}`;
+                dot.textContent = ch;
+                if (i === showDots.length - 1) { 
+                    dot.classList.add('predicted'); 
+                    dot.textContent = analysis.prediction; 
+                }
+                c.appendChild(dot);
+            });
+            const label = document.createElement('div');
+            label.className = 'pattern-label';
+            label.textContent = `📌 ${analysis.pattern} | Matches: ${analysis.matches}`;
+            c.appendChild(label);
+        } else {
+            c.innerHTML = `<div class="loading">⏳ ${lastN.length}/${analysis.patternLength || 5} records</div>`;
+        }
+
+        document.getElementById('prediction').textContent = analysis.prediction;
+        document.getElementById('confidence').textContent = `Confidence: ${analysis.confidence}%`;
+
+        const badge = document.getElementById('sourceBadge');
+        badge.textContent = analysis.sourceLabel;
+        badge.className = 'prediction-source ' + analysis.sourceClass;
+
+        document.getElementById('analysisDisplay').textContent = analysis.analysis;
+        document.getElementById('bigPercent').textContent = `${analysis.bigPercent}%`;
+        document.getElementById('smallPercent').textContent = `${analysis.smallPercent}%`;
+        document.getElementById('trendDisplay').textContent = analysis.trend;
+        document.getElementById('recordCount').textContent = fullHistory.length;
+
+        const tbody = document.getElementById('historyBody');
+        if (fullHistory.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="4" class="loading">📭 No data</td></tr>`;
+            return;
+        }
+        const allHistory = [...fullHistory].reverse();
+        let html = '';
+        let idx = fullHistory.length;
+        for (const item of allHistory) {
+            const label = item.bigSmall === 'B' ? 'B' : 'S';
+            const badgeCls = item.bigSmall === 'B' ? 'badge-b' : 'badge-s';
+            const numCls = item.bigSmall === 'B' ? 'big' : 'small';
+            const isLastN = idx > fullHistory.length - (analysis.patternLength || 5);
+            const style = isLastN ? 'background:#2a4a1a;' : '';
+            html += `<tr style="${style}">
+                        <td style="color:#8aaa70;font-size:10px;">#${idx}</td>
+                        <td style="font-family:monospace;font-size:10px;color:#a8d080;">${item.period}</td>
+                        <td><span class="num-box ${numCls}">${item.number}</span></td>
+                        <td><span class="${badgeCls}">${label}</span></td>
+                     </tr>`;
+            idx--;
+        }
+        tbody.innerHTML = html;
+    }
+
+    // ============================================
+    // REFRESH
+    // ============================================
+    async function refreshAll() {
+        document.getElementById('dbStatus').textContent = '⏳ Fetching...';
+        await updateDatabase();
+        renderAll();
+    }
+
+    // ============================================
+    // INIT
+    // ============================================
+    function init() {
+        loadDatabase();
+        renderAll();
+        startTimer();
+        refreshAll();
+        setInterval(refreshAll, 5000);
+        setInterval(() => { if (fullHistory.length > 0) saveDatabase(); }, 30000);
+    }
+
+    init();
+</script>
+</body>
+</html>
